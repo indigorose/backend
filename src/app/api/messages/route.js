@@ -1,36 +1,44 @@
 import { supabase } from '../../../lib/supabaseClient';
 
-// GET all messages
 export async function GET() {
-	const { data, error } = await supabase
-		.from('messages')
-		.select('*')
-		.order('created_at', { ascending: false });
+	try {
+		const { data, error } = await supabase
+			.from('messages')
+			.select('*')
+			.order('created_at', { ascending: false });
 
-	if (error) {
-		return Response.json({ error: error.message }, { status: 500 });
+		if (error) throw error;
+		return Response.json(data);
+	} catch (err) {
+		console.error('GET /api/messages error:', err.message);
+		return Response.json({ error: err.message }, { status: 500 });
 	}
-
-	return Response.json(data);
 }
 
-// POST new message
 export async function POST(req) {
-	const body = await req.json();
-	const { text } = body;
+	try {
+		const body = await req.json();
+		const { text } = body;
 
-	if (!text) {
-		return Response.json({ error: 'Text is required' }, { status: 400 });
+		if (!text) {
+			return Response.json(
+				{ error: 'Text is required' },
+				{ status: 400 }
+			);
+		}
+
+		const { data, error } = await supabase
+			.from('messages')
+			.insert([{ text }])
+			.select();
+
+		if (error) throw error;
+		return Response.json(data[0]);
+	} catch (err) {
+		console.error('POST /api/messages error:', err);
+		return Response.json(
+			{ error: err.message || 'Unknown error' },
+			{ status: 500 }
+		);
 	}
-
-	const { data, error } = await supabase
-		.from('messages')
-		.insert([{ text }])
-		.select();
-
-	if (error) {
-		return Response.json({ error: error.message }, { status: 500 });
-	}
-
-	return Response.json(data[0]);
 }
